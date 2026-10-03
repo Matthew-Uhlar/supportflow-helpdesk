@@ -1,0 +1,30 @@
+name: Sync from Portfolio
+
+# This project is developed in the Matthew-Uhlar/Portfolio monorepo (projects/<repo name>).
+# This workflow copies that folder, with its git history, into this standalone repository.
+on:
+  push:
+    paths: ['.github/workflows/sync-from-portfolio.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Merge the project folder from Portfolio
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git clone -q https://github.com/Matthew-Uhlar/Portfolio /tmp/portfolio
+          cd /tmp/portfolio
+          git subtree split -q --prefix="projects/${{ github.event.repository.name }}" -b project
+          cd "$GITHUB_WORKSPACE"
+          git fetch -q /tmp/portfolio project:project
+          git merge --allow-unrelated-histories -X theirs --no-edit -m "Sync from Portfolio" project
+          git push origin HEAD:main
